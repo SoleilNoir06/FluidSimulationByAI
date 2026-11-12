@@ -1,0 +1,31 @@
+// Counting sort, step 2a: exclusive prefix sum of cell counts, 1024 cells per work group.
+layout(local_size_x = 1024) in;
+layout(std430, binding = 0) readonly buffer B0 { uint counts[]; };
+layout(std430, binding = 1) writeonly buffer B1 { uint starts[]; };
+layout(std430, binding = 2) writeonly buffer B2 { uint blockSums[]; };
+
+shared uint tmp[2048];
+
+void main()
+{
+    uint gid = gl_GlobalInvocationID.x;
+    uint lid = gl_LocalInvocationID.x;
+    uint v = gid < uint(uNumCells) ? counts[gid] : 0u;
+
+    tmp[lid] = v;
+    memoryBarrierShared(); barrier();
+
+    uint src = 0u;
+    for (uint off = 1u; off < 1024u; off <<= 1u)
+    {
+        uint x = tmp[src * 1024u + lid];
+        if (lid >= off) x += tmp[src * 1024u + lid - off];
+        tmp[(1u - src) * 1024u + lid] = x;
+        src = 1u - src;
+        memoryBarrierShared(); barrier();
+    }
+
+    uint inclusive = tmp[src * 1024u + lid];
+    if (gid < uint(uNumCells)) starts[gid] = inclusive - v;
+    if (lid == 1023u) blockSums[gl_WorkGroupID.x] = inclusive;
+}

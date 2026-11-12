@@ -1,0 +1,26 @@
+// Counting sort, step 2b: exclusive prefix sum of the per-block totals (single work group).
+layout(local_size_x = 1024) in;
+layout(std430, binding = 0) buffer B0 { uint blockSums[]; };
+uniform int uNumBlocks;
+
+shared uint tmp[2048];
+
+void main()
+{
+    uint lid = gl_LocalInvocationID.x;
+    uint v = lid < uint(uNumBlocks) ? blockSums[lid] : 0u;
+    tmp[lid] = v;
+    memoryBarrierShared(); barrier();
+
+    uint src = 0u;
+    for (uint off = 1u; off < 1024u; off <<= 1u)
+    {
+        uint x = tmp[src * 1024u + lid];
+        if (lid >= off) x += tmp[src * 1024u + lid - off];
+        tmp[(1u - src) * 1024u + lid] = x;
+        src = 1u - src;
+        memoryBarrierShared(); barrier();
+    }
+
+    if (lid < uint(uNumBlocks)) blockSums[lid] = tmp[src * 1024u + lid] - v;
+}

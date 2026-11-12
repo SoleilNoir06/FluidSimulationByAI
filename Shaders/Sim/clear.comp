@@ -1,0 +1,8 @@
+layout(local_size_x = 256) in;
+layout(std430, binding = 0) writeonly buffer B0 { uint counts[]; };
+
+void main()
+{
+    int i = int(gl_GlobalInvocationID.x);
+    if (i < uNumCells) counts[i] = 0u;
+}

@@ -1,0 +1,15 @@
+// Counting sort, step 1: each particle finds its cell and reserves a slot inside it.
+layout(local_size_x = 256) in;
+layout(std430, binding = 0) readonly buffer B0 { vec4 pred[]; };
+layout(std430, binding = 1) writeonly buffer B1 { uint keys[]; };
+layout(std430, binding = 2) writeonly buffer B2 { uint localIdx[]; };
+layout(std430, binding = 3) buffer B3 { uint counts[]; };
+
+void main()
+{
+    int i = int(gl_GlobalInvocationID.x);
+    if (i >= uNumParticles) return;
+    uint cell = uint(CellIndex(CellCoord(pred[i].xyz)));
+    keys[i] = cell;
+    localIdx[i] = atomicAdd(counts[cell], 1u);
+}

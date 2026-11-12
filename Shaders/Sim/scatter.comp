@@ -1,0 +1,13 @@
+// Counting sort, step 3: final sorted slot of every particle -> permutation table.
+layout(local_size_x = 256) in;
+layout(std430, binding = 0) readonly buffer B0 { uint keys[]; };
+layout(std430, binding = 1) readonly buffer B1 { uint localIdx[]; };
+layout(std430, binding = 2) readonly buffer B2 { uint starts[]; };
+layout(std430, binding = 3) writeonly buffer B3 { uint perm[]; };
+
+void main()
+{
+    int i = int(gl_GlobalInvocationID.x);
+    if (i >= uNumParticles) return;
+    perm[starts[keys[i]] + localIdx[i]] = uint(i);
+}
